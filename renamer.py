@@ -52,7 +52,7 @@ def parse(argv):
     # validate arguments
     if len(directory) == 0:
         sys.exit("no directory")
-    elif len(match) != 2 or '' in match:
+    elif len(match) != 2:
         sys.exit("invalid match string format")
     elif len(number) == 0:
         sys.exit("invalid number of digits of the index")
