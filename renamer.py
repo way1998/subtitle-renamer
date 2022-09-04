@@ -5,10 +5,11 @@ import sys, getopt, os
 def help():
     msg = '''usage: renamer.py
              -d --directory: path to the directory
-             -v --video: filename pattern of video files, replace index with "{}", e.g. "S02E{}"
-             -s --subtitle: filename pattern of subtitle files, replace index with "#", e.g. "Season 2 EP{}"
-             -n --number: number of digits in an index
-             -h --help: print usage
+             -m --match: match string in format '<parent>=<child>' directly preceding the index, e.g. 'S02E=Season 2 EP'
+             -n --number: number of digits of the index
+             -p --parent: parent (video file) extension
+             -c --child: child (subtitle file) extension
+             -h: print usage
           '''
     print(msg)
 
@@ -22,12 +23,13 @@ def parse(argv):
 
     # get arguments
     directory = ''
-    patternv = ''
-    patterns = ''
-    digits = 0
+    match = []
+    number = 0
+    parent = ''
+    child = ''
 
     try:
-        opts, args = getopt.getopt(argv, "hd:v:s:n:", ["directory=", "video=", "subtitle=", "number="])
+        opts, args = getopt.getopt(argv, "hd:m:n:p:c:", ["directory=", "match=", "number=", "parent=", "child="])
     except getopt.GetoptError:
         help()
         sys.exit("invalid arguments")
@@ -38,66 +40,73 @@ def parse(argv):
             sys.exit()
         elif opt in ("-d", "--directory"):
             directory = arg
-        elif opt in ("-v", "--video"):
-            patternv = arg
-        elif opt in ("-s", "--subtitle"):
-            patterns = arg
-            exts = patterns[patterns.rfind('.')+1:]
+        elif opt in ("-m", "--match"):
+            match = arg.split("=")
         elif opt in ("-n", "--number"):
-            digits = arg
+            number = arg
+        elif opt in ("-p", "--parent"):
+            parent = arg
+        elif opt in ("-c", "--child"):
+            child = arg
 
     # validate arguments
     if len(directory) == 0:
-        sys.exit("no directory provided")
-    elif len(patternv) == 0:
-        sys.exit("no filename pattern of video files provided")
-    elif len(patterns) == 0:
-        sys.exit("no filename pattern of subtitle files provided")
-    elif digits == 0:
-        sys.exit("invalid number of index digits")
-    elif len(exts) == 0:
-        sys.exit("no subtitle file extension specified")
+        sys.exit("no directory")
+    elif len(match) != 2:
+        sys.exit("invalid match string format")
+    elif len(number) == 0:
+        sys.exit("invalid number of digits of the index")
+    elif len(parent) == 0:
+        sys.exit("no parent extension")
+    elif len(child) == 0:
+        sys.exit("no child extension")
 
     # return arguments
-    return directory, patternv, patterns, digits, exts
+    return directory, match, number, parent, child
 
 
-# get a list of subtitle files to rename
-def get_subtitle_files(directory, exts):
-    subtitles = []
+# get lists of parent and child files with corresponding extensions
+def get_files(directory, parent, child):
+    parents = []
+    children = []
 
     for file in os.listdir(directory):
-        if file.endswith("." + exts):
-            subtitles.append(os.path.join(directory, file))
+        if file.endswith("." + parent):
+            parents.append(os.path.join(directory, file))
+        elif file.endswith("." + child):
+            children.append(os.path.join(directory, file))
 
-    return subtitles
+    return parents, children
 
 
-# rename subtitle files based on filename pattern of video files
-def match_and_rename(directory, subtitles, patterns, patternv, digits):
-    for s in subtitles:
+# match parent with child files and rename child files
+def match_and_rename(parents, children, match, number):
+    for child in children:
         # get index
-        patterns_prefix = patterns[:patterns.find('{}')]
-        i = s.find(patterns_prefix) + len(patterns_prefix)
-        index = s[i:i+int(digits)]
+        i = child.find(match[1]) + len(match[1])
+        index = child[i:i+int(number)]
+        parent_substr = match[0] + index
 
-        # rename subtitle file
-        filled = patternv.format(index)
-        exts = patterns[patterns.rfind('.')+1:]
-        new_name = filled[:filled.rfind('.')+1] + exts
-        new_path = os.path.join(directory, new_name)
-        os.rename(s, new_path)
+        # find corresponding parent
+        for parent in parents:
+            if parent_substr in parent:
+                i_ep = parent.rfind(".")
+                i_ec = child.rfind(".")
+                new_child_path = parent[:i_ep] + child[i_ec:]
+
+                # rename child file
+                os.rename(child, new_child_path)
 
 
 def main(argv):
     # parse arguments
-    directory, patternv, patterns, digits, exts = parse(argv)
+    directory, match, number, parent, child = parse(argv)
 
-    # get subtitle files
-    subtitles = get_subtitle_files(directory, exts)
+    # get parent and child files
+    parents, children = get_files(directory, parent, child)
 
-    # rename subtitle files
-    match_and_rename(directory, subtitles, patterns, patternv, digits)
+    # match and rename child files
+    match_and_rename(parents, children, match, number)
       
 
 if __name__ == "__main__":
