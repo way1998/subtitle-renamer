@@ -1,5 +1,5 @@
 # Subtitle Renamer
-A simple program to rename subtitle files to match their corresponding video files in the same directory.
+A simple program to rename subtitle files to match the video files in the same directory.
 
 ## Environment
 Python 3.8
