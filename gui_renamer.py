@@ -1,4 +1,4 @@
-# subtitle_renamer.py
+# gui_renamer.py
 
 from faulthandler import disable
 from pydoc import visiblename
@@ -12,8 +12,6 @@ import os.path
 def get_files(directory, parent, child):
     parents = []
     children = []
-    # print(parent)
-    # print(child)
     for file in os.listdir(directory):
         if file.endswith("." + parent):
             parents.append(os.path.join(directory, file))
@@ -24,10 +22,6 @@ def get_files(directory, parent, child):
 
 # match parent with child files and rename child files
 def match_and_rename(parents, children, match, number):
-    # print(parents)
-    # print(children)
-    # print(match)
-    # print(number)
     for child in children:
         # get index
         i = child.find(match[1]) + len(match[1])
@@ -43,6 +37,7 @@ def match_and_rename(parents, children, match, number):
 
                 # rename child file
                 os.rename(child, new_child_path)
+
 
 # GUI
 
@@ -63,7 +58,6 @@ file_list_column = [
     ],
 ]
 
-# For now will only show the name of the file that was chosen
 parameter_column = [
     [sg.Text("1. Select a sample video file from list on left")],
     [sg.Text("2. Keep only the substring before the episode number, ")],
@@ -208,6 +202,7 @@ while True:
                 window["_START_OVER_"].update("Failed! Check inputs and try again", visible=True)
 
     elif event == "_START_OVER_":
+        # reset everything
         window["_FOLDER_"].update("")
         window["_FOLDER_"].set_focus()
         window["_FILE_LIST_"].update([])
